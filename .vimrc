@@ -22,3 +22,8 @@ set bg=dark
 hi Normal guibg=NONE ctermbg=NONE
 :inoremap <C-v> <ESC>"+pa
 :vnoremap <C-c> "+y
+
+set ignorecase
+set cursorline 
+set title
+set history=1000
