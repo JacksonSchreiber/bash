@@ -1,0 +1,282 @@
+shopt login_shell
+
+#LOGIN VS NON-LOGIN
+echo $- #shows options
+./ #executes in a different process space
+  login_shell off
+
+source test.sh #runs in same process space
+  login_shell on
+
+
+
+echo $PATH #path to search for executable
+PATH=$PATH:$PWD #append current directory to $PATH
+
+
+#ALIAS
+alias hello="echo hello from alias" #alias
+type hello #hello is aliased to 'echo hello from alias'
+
+#FUNCTION
+function hello {echo this is a function; }
+
+#PRECEDENCE   (if unset as alias, hello would be a function, etc..)
+  1. alias
+  2. function
+  3. script
+
+
+hello -r #remove everything from hello
+
+#REDIRECTION
+#only directs to last file redirected to
+  echo text > file1 > file2 #only to file2
+
+#stdin
+  while read line; do echo $line | awk '{print $2}'; done < in_1.txt #reads in_1.txt
+  first
+  second
+  third
+
+#stderr
+  cat a.txt b.xtx c.txt 2>/dev/null #send errors to null
+  cat a.txt b.xtx c.txt &> output.txt #send errors and output to output.txt
+
+#NAMED PIPES
+for input, processes need to communicate at different times
+
+#STRACE - system calls when command run
+  strace echo hello |& grep -E "exec|write"
+#CHMOD
+  #STICKY BITS - t
+  #SUID - s bit/SET UID. set on file so any user can execute with same permissions as owner 
+
+#GIT CLONE ON OPEN SOURCE REPO
+
+REPO_URL='https://git.cybbh.space/os/public.git'
+git clone $REPO_URL $PROGRAM #program is name of folder to install to
+
+cd $PROGRAM && make install
+
+#HASHING - check with two algorithms to ensure no collision
+file my_program
+  #checks file signature, can be modified to avoid detection though
+
+
+#GREP
+grep root /etc/passwd #returns line with root
+grep -o root /etc/passwd #returns just root
+
+grep -C 2 gnats /etc/passwd #find gnats and return 2 lines before and after it
+
+hello='hello world'
+grep $hello *grep.txt
+  only finds 'hello' in file
+grep "$hello" *grep.txt
+  finds 'hello world' in file
+
+
+#SED - used mostly for substitution. awk and grep for everything else
+sed 's/line/sentence/' $file #subsitute first instance of 'line' in each line of $file with 'sentence'
+sed 's/line/sentence/g' $file #substitue all instanced of 'line' with 'sentence' with /g (global)
+sed '3 s/line/sentence/' $file #sub only on line 3
+sed '/line 2/s/line/LINE/' $file #replace 'line' with 'LINE' on lines matching 'line 2'
+
+#FIND
+find /etc -type f -name pass* 2>/dev/null #find ALL files in /etc/ that start with pass
+find /repo/ -mtime 0 2>/dev/null #find files modified today
+find $PWD -user root -name "*.sh" 2>/dev/null #find files owned by root
+
+
+#AWK
+echo "Hello Tom" | awk '{$2="Adam"; print $0} #replace field 2 with adam, print whole line ($0)
+
+
+
+
+
+
+#LINUX BOOT PROCESS - Big Mike Got Killed in Russia
+#Bios - First program to run
+#MBR - Master Boot Record
+  located at beginning of bootable disk (512 bytes)
+  contains primary bootloader, partition table..
+    partition table is 64 bytes split into 16 bytes
+  max of 4 primary partitions, 2TB each
+    located in /dev/hda or /dev/sda (/dev/vda)
+  -->use dd to hash
+  
+#GRUB
+  config file - /boot/grub/menu.lst
+  OS selection
+#Kernel - process is 0 [kthreadd]    brackets are system processes
+  executes /sbin/init or systemd daemon. PID of 1
+  ls -l /sbin/init  determine which init system using
+#Init - SysV and Systemd. Pre Configured RunLevels
+  looks at /etc/inittab for SysV
+    should have rc 0 through 6
+      mount filesystem and change if default is init 6
+  startup process handled by scrips in /etc/init.d
+    scripts that run 'S'tart and 'K'ill scripts out of rc folders
+  SYSTEMV - /etc/inittab
+    uses runlevels
+  SYSTEMD - /etc/systemd and /etc/systemd/system
+    uses 'Targets'
+#Runlevels /lib/systemd/system - ls -l | grep -v wants | grep 'run'
+  startup scripts in /etc/rc#.d
+  
+
+dsl-4.11.rc2
+cloop v2.01
+/etc/rcS.d/S00knoppix-autoconfig
+
+#CONDITIONALS
+  man test
+
+#RC FILE
+  #set variables in .rc file
+  #source file.rc in your script to access those variables
+
+#STARTUP PROCESSES (SYSV)
+
+  #Two primary processes after startip
+    Kernel-space [kthreadd] PID = 2
+    User-space /sbin/init PID = 1 parent/grandparent of all linux processes
+
+#KERNEL VS USER SPACE
+  kernel runs in own memory space
+  user mode resticts access to a subset of memory and safe cpu operations
+
+#PROCESS OWNERSHIP, EUID, RUID
+  effective user ID (euid) - defines access rights for a process
+  real user ID (RUID) - which user can kill and send signals to processes
+  
+#SYSTEM CALLS - interaction between a process and kernel
+  fork()        - kernel creates nearly identical copy of process
+  exec(program) - kernel starts program, replacing the current process  
+
+#ORPHAN AND ZOMBIE (DEFUNCT) PROCESSES
+  Orphan - parent process exited, adopted by sbin/init with PPID of 1
+    all daemons are orphans
+    disown -a && exit   - close shell and force children to be adopted
+  
+  Zombie (defunct) - completed process but still has entry in process table, waiting on parent to ack
+    parent process must be killed to stop
+    do not use resources
+  Fork Bomb - DOS
+  
+  $$  - PID current shell
+
+#DAEMONS (services) - program runs as a background process
+  all are orphans
+  manage/monitor a service (status, start, restart)
+  malicious processes are sometimes orhpaned, named to make look like daemon process
+
+#JOBS CONTROL
+  jobs    - displays list of jobs in background
+  fg  bg  - push/pull jobs to/from background
+  kill %<job #>
+  [ctrl -z] or kill -19   - stop/suspend job
+  kill -9 <PID> or pkill -9 <process name>
+
+#CRON JOBS
+  cron daemon checks /var/spool/cron, /etc/cron.d and the file /etc/crontab once a minute, executes
+  
+  System cron jobs
+    run as root, rigidly schedules
+    controlled by /etc/crontab
+  User cron jobs
+    use crontab command
+    /var/spool/cron/crontabs/
+
+#AUDITING AND LOGGING - Logging is system/app defined, auditing is user defined
+  #syslog and rsyslog are on SysV
+  #LOG TYPES 
+    #Authentication
+      /var/log/auth.log     - authentication events
+      /var/run/utmp         - Users currently logged in
+      /var/log/wtmp         - history file for utmp
+      /var/log/btmp         - failed login attempts
+    #Application
+      apache    - web server (dir)
+      apt       - Package Manager (dir)
+      /var/log/mysql.log
+    #System - actions taken by kernel
+      /var/log/messages     - Legacy catch all
+      /var/log/syslog       - Ubuntu/Debian catch all
+      #dmesg                - Device Messenger (queries /proc/kmsg) first logs generated
+        Kernel Ring Buffer  - doesn't fill 
+    #General logs
+      /var/log
+      Config: /etc/rsyslog.conf
+      Service: /usr/sbin/rsyslogd
+    #Loggin Daemon
+      /usr/sbin/rsyslogd    - User space daemon, reads msg written to /dev/log, stores based on /etc/rsyslog.conf
+        syslog() via libc
+        kernel ring buffer
+        audit records via audit sussystem (auditd)
+    #Config File  /etc/rsyslog.conf
+      Standard is "facility.severity"
+        facility: what program/part of system the log is from #look up "Facility Codes" chart
+        severity: urgency #look up "Severity Codes" chart
+    #logrotate  how large log files get, how long to keep them
+      /etc/logrotate.conf
+    #Useful logging commands
+      logger                - send user generated msg to system
+      > /var/log/messages   - wipe logs
+  #AUDITING 
+    #Commands
+      [kauditd]   - kernel level daemon, monitor individual sys calls (/sbin/auditd)
+      auditctl    - control/config command
+      aureport    - summary reports of audit logs (readable ausearch)
+      ausearch    - query audit logs
+      last        - display list of users logged in and out (/var/log/wtmp)
+        last -f /var/log{wtmp,btmp}     - view data files
+      logrotate
+    #SystemD Commands
+      journald
+      journalctl
+
+#LINUX FILE PERMISSIONS
+#   Permission Groups
+#     Owner - u
+#     Group - g     group assigned to file
+#     All Users - a
+#   Permission Types
+#     Read r 4
+#     Write w 2
+#     Execute x 1
+#   Example _rwxrwxrwx 1 Owner:Group
+#     _ is the special permission flag
+#
+#
+#   Owners and Groups
+#     chown owner:group filename
+#   SPECIAL PERMISSIONS
+#     Setuid/Setgid Special Permissions - run exe as owner with owners permissions
+#       chmod u+s file2.sh    every user that executes file2.sh will do so with the owners permissions
+#       chmod g+s file2.sh    same as above but with group's permissions
+#
+#     Sticky Bit - used on directories. all files in directories will only be modifiable by THEIR owners
+#       identified by 't' in x bit of 'other' section
+#         lowercase t implies exe bit is prresent, uppercase T implies without
+
+#EXERCISES####################################################################
+#
+#HASHING bootloader from mbr
+  dd if=mbrfile of=outputfile bs=446 count=1
+  md5sum outputfile
+
+#HASH second partition of MBR
+  dd if=mbroken of=secondPart bs=1 skip=462 count=16
+  md5sum secondPart
+
+
+
+
+
+
+
+
+

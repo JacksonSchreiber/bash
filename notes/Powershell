@@ -1,0 +1,243 @@
+$profile | test-path 	#if true, uses this profile
+
+#REMOTING
+
+get-PSSessionConfiguration # shows permissions
+
+winrm get winrm/config #configuration (http ports, etc..)
+
+set-item WSMan:\localhost\Client\TrustedHosts - value "workstation4" #let workstation4 connect remotely 	use get-item to view 
+
+
+
+invoke-command -ComputerName workstation4 {get-process} > somefile.txt #must be connected already to invoke command
+
+Enter-PSSession -computername workstation2
+
+
+#.NET FRAMEWORK
+
+[system.text.encoding]::unicode.getbytes("hello")
+
+
+#REGISTRY
+Derived hives - HKEY_CURRENT_USER and HKEY_CURRENT_CONFIG
+
+	current_user populated from users
+	current_config populated from local machine, classes_root
+
+in powershell, cd into registry
+	cd hklm:
+	#look for values in key
+	gci
+	get-item #look inside 'folders'
+	Get-ItemProperty #other info
+
+
+make new item
+	new-item "hklm:\path"
+
+net use * http://live.sysinternals.com #map tools to an available drive letter (usually starts with Z)
+
+#SHOW FILES
+gci -hidden #show hidden files
+gci -force #show ALL file, including hidden
+
+
+#SERVICES
+get-service | ft -wrap
+
+#in command prompt
+  sc #good command to list services
+
+
+#BCDEDIT
+
+Display current BCD Config
+  bcdedit.exe
+Backup BCD Config
+  bcdedit /export C:\SAVEDBCD
+
+
+#ACCESS HKU
+gci registry::hkey_users
+
+#Alternate Data Streams
+  #cmd
+     secret text > sometext.txt:secret.txt
+     more < sometext.txt:secret.txt #view secret text
+     view with dir /r
+  #powershell
+     add-content -path C:\some.txt -value "supersecret" -stream 'supersecret.txt'
+     gci -recurse | % { gi $_.FullName -stream * } | where stream -ne ':$Data'
+     #search recursively for ADS
+  
+#PROFILE FILES - highest to lowest precedence:
+  All Users, All hosts        $PSHOME\Profile.ps1
+  All Users, Current Host     $PSHOME\Microsoft.Powershell_profile.ps1
+  Current User, All Hosts     $HOME\Documents\PowerShell\Profile.ps1
+  Current user, Current Host  $Home\[My ]Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+      #CUCH stored in $PROFILE
+
+#NETSTAT
+  netstat -ano    established connections w/ exe
+
+#SYSINTERNALS - download tools
+  net use * http://live.sysinternals.com
+  
+  Tcpview.exe   -see incoming and outgoing connections, graphical NETSTAT
+  PROCMON(Process Monitor) - real-time file system, registry, process/thread activity
+  PROCEXP - better task manager. processes in tree format
+  HANDLE - shows open file references (DLLs)
+#ABNORMALITIES
+  Get-Process smss, csrss, lsass | sort by id...
+    #should only be one smss with a low PID
+
+#REMOTING
+  Enable-PSRemoting enables remoting
+  New-PSSession     creates persistent connection with local/remote
+  Enter-PSSession   starts an interactive session with remote computer
+  Invoke-Command    run single command on remote PC
+    -asjob          run in background
+  Receive-Job       get results of background job
+
+#UAC - USER ACCESS CONTROL 
+#red app or publisher blocked by group polcicy, blue and gold - admin app, blue trusted and authenticode signed app
+  Execution Levels:
+    asInvoker
+    requireAdministrator
+    highestAvailable
+  Will UAC prompt show?
+    Auto Elevate is True
+      ./strings C:\file.exe -accepteula | select-string -SimpleMatch "autoelevate"
+    Digitally Signed
+      ./sigcheck -m C:\file.exe -accepteula | Select-String -SimpleMatch "level"
+    Trusted Directory
+      ie C:\Windows\System32
+
+
+  FIND RequestedExecutionLevel:
+    search strings of binary for asInvoker...
+
+
+#ARTIFACTS AND AUDITING AND LOGGING
+  new-psdrive -name hku -PSProvider Registry -root hkey_users
+    #make hku drive
+  #UserAssist - reg key tracks GUI programs run by a particular user
+    #View EXE files run
+      Get-ItemProperty HKU\....\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\UserAssist\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\Count
+    #View Shortcut files executed
+      HKU\....\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\UserAssist\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\Count
+  #BAM - Windows Background Activity Monitor
+    Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\bam\UserSettings\*'     (Windows 1709 and 1803)
+    Get ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\bam\state\UserSettings\*'     (Windows 1809 and newer)
+  #RECYCLE BIN
+    gci 'C:\$RECYCLE.BIN' -Recurse -Verbose -Force | select *
+    gci 'C:\$RECYCLE.BIN' -Recurse -Force
+    cd '.\$Recycle.Bin'
+    $I is metadata, $R is original
+  #PREFETCH - files created by OS when an app is run for the first time evidence it was executed
+    gci -Path 'C:\Windows\Prefetch' -ErrorAction Continue | select * | select -first 5
+  #JUMP LISTS - access frequently or recently used apps (taskbar)
+    gci -Recurse C:\Users\*\AppData\Roaming\Microsoft\Winodws\Recent -ErrorAction Continue | select FullName, LastAccessTime
+  #RECENT FILES - reg key of last 150 files/folders opened
+    gci 'RGISTRY::HKU\*\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs'
+    file text to unicode:
+      [System.Text.Encoding]::Unicode.GetString((gp "REGISTRY::HKEY_USERS\*\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs\.txt")."0")
+    Convert all a users' values from HEX to Unicode
+      Get-Item "REGISTRY::HKEY_USERS\*\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs\.txt" | select -Expand property | ForEach-Object { [System.Text.Encoding]::Default.GetString((Get-ItemProperty -Path "REGISTRY::HKEY_USERS\*\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs\.txt" -Name $_).$_)}
+  
+  #BROWSER ARTIFACTS 
+    History - record access to file on website accessed via link
+      .\strings.exe 'C:\Users\<username>\AppData\Local\Google\Chrome\User Data\Default\History'
+    Find FQDN in Sqlite txt
+      $History = (Get-Content 'C:\users\<username>\AppData\Local\Google\Chrome\User Data\Default\History') -replace "[^a-zA-Z0-9\.\:\/]",""
+      $History| Select-String -Pattern "(https|http):\/\/[a-zA-Z_0-9]+\.\w+[\.]?\w+" -AllMatches|foreach {$_.Matches.Groups[0].Value}| ft     #regex to sort for websites
+  #AUDITING
+    CMD
+      #View entire auditpol list
+
+      #auditpol /get /category:*
+
+      #Set File SYstem subcategory to audit
+
+      #auditpol /set /subcategory:"File System"
+
+      #Remove File System subcategory auditing
+
+      #auditpol /set /subcategory:"File System" /success:disable
+
+      #To list the global object access auditing entries set on files or folders:
+
+      #auditpol /resourceSACL /type:File /view
+
+      #To list the global object access auditing entries set on Registry Keys
+
+      #auditpol /resourceSACL /type:Key /view
+    GUI
+      eventvwr
+    CLI
+      wevtutil el                         - show all logs
+      wevtutil gli security               - get log info
+      wevtutil qe security /c:3 /f:text   - get last 3 events
+    POWERSHELL
+      Get_EventLog -LogName System -Newest 10                                                     - View newest 10 system logs
+      Get-EventLog -LogName Security | ft -wrap                                                   - View the entire msg field in sec log
+      get-winevent -FilterHashtable @{logname="security";id="4624"} | select -first 5 | ft wrap   - seach logs w/ multiple criteria
+  #MALICIOUS EVENT IDs
+    User added to privileged group      - 4728, 4732, 4756
+    Security-Enabled group Modification - 4735
+    Successful/Failed User Acc. Login   - 4624, 4625
+  #POWERSHELL TRANSCRIPT (history)
+    Start-Transcript    - capture input/output of commands into text
+    Get-History
+    Get-Content "C:\users\$env:username\AppData\Roaming\Microsoft\Windows\Powershell\PSReadline\ConsoleHost_history.txt"
+################################CTF NOTES#############################
+
+#list windows updates
+  wmic qfe list
+
+#seach for file by name
+  gci -Recurse -Filter *.zip
+
+#extract .zip
+  Expand-Archive -Path ... -DestinationPath ...
+#all versions
+  $PSVersionTable
+
+#description of service
+  Get-WmiObject win32_service | Select-Object -Property * | Where-Object {$_.Name -eq "LegoLand"}
+#query ALL services
+  sc.exe
+  sc.exe showsid legit #legit is service name
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
