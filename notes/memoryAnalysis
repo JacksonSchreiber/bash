@@ -1,0 +1,18 @@
+Memory Analysis
+
+Determine Profile
+    vol.py -f <image> imageinfo
+
+
+PLUGINS #-h to look at all plugins
+    Network Connections
+        connscan
+    Processes
+
+    Drivers
+        volatility_2.6_win64_standalone.exe --profile=WinXPSP2x86 -f 0zapftis.vmem moddump -D drivers\
+        driverscan          #get offset of driver
+    Command History
+        cmdscan
+        consoles
+        cmdline
