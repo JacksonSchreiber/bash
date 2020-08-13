@@ -196,7 +196,7 @@ cloop v2.01
     #Authentication
       /var/log/auth.log     - authentication events
       /var/run/utmp         - Users currently logged in
-      /var/log/wtmp         - history file for utmp
+      /var/log/wtmp         - history file for utmp (successful logins)
       /var/log/btmp         - failed login attempts
     #Application
       apache    - web server (dir)
@@ -238,7 +238,7 @@ cloop v2.01
       journald
       journalctl
 
-#LINUX FILE PERMISSIONS
+#LINUX FILE PERMISSIONS     move file to /tmp/ for full permissions
 #   Permission Groups
 #     Owner - u
 #     Group - g     group assigned to file

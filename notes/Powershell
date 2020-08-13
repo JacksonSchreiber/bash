@@ -1,4 +1,6 @@
+
 $profile | test-path 	#if true, uses this profile
+    if this is false, the profile didn't load
 
 #REMOTING
 
@@ -28,7 +30,7 @@ Derived hives - HKEY_CURRENT_USER and HKEY_CURRENT_CONFIG
 
 in powershell, cd into registry
 	cd hklm:
-	#look for values in key
+	#look for values in key USE ALL OF THESE
 	gci
 	get-item #look inside 'folders'
 	Get-ItemProperty #other info
@@ -84,7 +86,8 @@ gci registry::hkey_users
 
 #SYSINTERNALS - download tools
   net use * http://live.sysinternals.com
-  
+
+  autoruns - enumerate all programs that auto start on windows
   Tcpview.exe   -see incoming and outgoing connections, graphical NETSTAT
   PROCMON(Process Monitor) - real-time file system, registry, process/thread activity
   PROCEXP - better task manager. processes in tree format
@@ -92,6 +95,11 @@ gci registry::hkey_users
 #ABNORMALITIES
   Get-Process smss, csrss, lsass | sort by id...
     #should only be one smss with a low PID
+    
+    Anything not running from system32
+
+    network connections coming from explorer.exe
+        #netstat -bano      (links process to IP)
 
 #REMOTING
   Enable-PSRemoting enables remoting
@@ -101,7 +109,7 @@ gci registry::hkey_users
     -asjob          run in background
   Receive-Job       get results of background job
 
-#UAC - USER ACCESS CONTROL 
+#UAC - USER ACCESS CONTROL      (ADMIN PRIVILEDGE)
 #red app or publisher blocked by group polcicy, blue and gold - admin app, blue trusted and authenticode signed app
   Execution Levels:
     asInvoker
@@ -110,8 +118,9 @@ gci registry::hkey_users
   Will UAC prompt show?
     Auto Elevate is True
       ./strings C:\file.exe -accepteula | select-string -SimpleMatch "autoelevate"
-    Digitally Signed
+    Digitally Signed    #find manifest
       ./sigcheck -m C:\file.exe -accepteula | Select-String -SimpleMatch "level"
+        #look for <autoelevate> True
     Trusted Directory
       ie C:\Windows\System32
 
@@ -192,6 +201,13 @@ gci registry::hkey_users
     Start-Transcript    - capture input/output of commands into text
     Get-History
     Get-Content "C:\users\$env:username\AppData\Roaming\Microsoft\Windows\Powershell\PSReadline\ConsoleHost_history.txt"
+
+#ACTIVE DIRECTORY
+
+Get-aduser 
+Get-ADGroupMember -identity "Domain Admins"
+    #copy names from Domain Admins list into Get-ADGroupMember -identity
+gpedit.msc
 ################################CTF NOTES#############################
 
 #list windows updates
@@ -211,8 +227,8 @@ gci registry::hkey_users
   sc.exe
   sc.exe showsid legit #legit is service name
 
-
-
+#filter all accounts, select description and name
+    Get-ADUser -Properties 'Description' -Filter * | Select-Object -Property Description,Name
 
 
 
