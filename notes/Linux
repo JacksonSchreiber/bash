@@ -172,6 +172,7 @@ cloop v2.01
   all are orphans
   manage/monitor a service (status, start, restart)
   malicious processes are sometimes orhpaned, named to make look like daemon process
+        systemctl status        find what launched orphan process (if it's a service)
 
 #JOBS CONTROL
   jobs    - displays list of jobs in background
