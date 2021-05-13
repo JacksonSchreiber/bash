@@ -4,8 +4,8 @@
 import socket
 import sys
 
-if len(sys.argv) != 2:
-    print "Usage: vrfy.py <Username List>"
+if len(sys.argv) != 3:
+    print "Usage: vrfy.py <Username List> <SMTP Server IP>"
     sys.exit(0)
 
 # Open username list
@@ -15,7 +15,7 @@ userList = open(sys.argv[1], "r")
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to the server
-connect = s.connect(('10.11.1.217',25))
+connect = s.connect((sys.argv[2],25))
 
 #Receive the banner
 banner = s.recv(1024)
