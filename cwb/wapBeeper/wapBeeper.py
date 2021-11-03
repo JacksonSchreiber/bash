@@ -9,12 +9,13 @@ wave_obj = simpleaudio.WaveObject.from_wave_file("beep1.wav")
 #play_obj.wait_done()
 
 print("WAP Beacon Beeper. Make 802.11 beacon frames audible.")
-print("Usage: sudo python3 wapBeeper.py <target BSSID delimited by colon (:)> <beep frequency (optional, default is a beep per 1 beacon)>")
-print("Example: sudo python3 wapBeeper.py 60:38:E0:B3:5F:41 5")
-bssid = sys.argv[1]
+print("Usage: sudo python3 wapBeeper.py <interface> <target BSSID delimited by colon (:)> <beep frequency (optional, default is a beep per 1 beacon)>")
+print("Example: sudo python3 wapBeeper.py wlan0 60:38:E0:B3:5F:41 5")
+interface = sys.argv[1]
+bssid = sys.argv[2]
 beepFreq = 1
-if len(sys.argv) > 2:
-    beepFreq = sys.argv[2]
+if len(sys.argv) > 3:
+    beepFreq = sys.argv[3]
 
 
 def PacketHandler(packet):
@@ -28,4 +29,4 @@ def PacketHandler(packet):
                     play_obj = wave_obj.play()
 
 i = 0
-sniff(iface="wlan0", prn = PacketHandler) #interface name
+sniff(iface=interface, prn = PacketHandler) #interface name
